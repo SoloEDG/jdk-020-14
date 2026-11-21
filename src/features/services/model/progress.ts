@@ -1,6 +1,7 @@
 import type { Shift } from "../../../shared/types";
 import { copyShift, record } from "../../../shared/document";
-import { serviceCatalog } from "./catalog";
+import { jobCatalog } from "../../workflow/model/catalog";
+
 export function advanceServices(state: Shift, seconds: number): Shift {
   const s = copyShift(state);
   for (const task of s.services) {
@@ -21,7 +22,7 @@ export function advanceServices(state: Shift, seconds: number): Shift {
       }
       record(
         s,
-        `${task.flightId} ${serviceCatalog[task.kind].label}完成`,
+        `${task.flightId} ${jobCatalog[task.kind].label}${task.copyIndex > 0 ? `#${task.copyIndex + 1}` : ""}完成`,
         "success",
       );
     }

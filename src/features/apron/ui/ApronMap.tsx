@@ -1,5 +1,6 @@
 import type { Shift } from "../../../shared/types";
 import { occupiedFlight, compatibleStand } from "../lib/geometry";
+import { vehicleColors } from "../../fleet/lib/routing";
 import { Aircraft } from "./Aircraft";
 interface Props {
   state: Shift;
@@ -242,13 +243,7 @@ export function ApronMap({ state, onStand, onFlight }: Props) {
               width="22"
               height="13"
               rx="3"
-              fill={
-                v.kind === "fuel"
-                  ? "#dda24d"
-                  : v.kind === "baggage"
-                    ? "#4b9392"
-                    : "#798cab"
-              }
+              fill={vehicleColors[v.kind]}
               stroke="#f3f0df"
               strokeWidth="1.5"
             />

@@ -6,19 +6,29 @@ import { dispatchService } from "../features/services";
 import {
   SessionBar,
   ScoreStrip,
-  changeSpeed,
   togglePause,
+  changeSpeed,
   saveShift,
   loadShift,
   createShift,
 } from "../features/session";
+import {
+  WorkflowModal,
+  MigrationDialog,
+  publishWorkflow,
+  migrateFlight,
+} from "../features/workflow";
+import type { MigrationPlan, WorkflowDraft } from "../features/workflow";
 import { useSimulation } from "./useSimulation";
 import { Inspector } from "./Inspector";
 import "./styles.css";
+
 export function App() {
   const [state, setState] = useSimulation(),
     [notice, setNotice] = useState(""),
-    [resetOpen, setResetOpen] = useState(false);
+    [resetOpen, setResetOpen] = useState(false),
+    [editorOpen, setEditorOpen] = useState(false),
+    [migration, setMigration] = useState<MigrationPlan | null>(null);
   const notify = (text: string) => {
     setNotice(text);
     window.setTimeout(() => setNotice(""), 4000);
@@ -41,10 +51,11 @@ export function App() {
           const saved = loadShift();
           if (saved) {
             setState(saved);
-            notify("已恢复保存的班次");
+            notify("已恢复保存的班次，每项作业仍归属原流程版本");
           } else notify("没有可用存档，当前班次保持不变");
         }}
         onReset={() => setResetOpen(true)}
+        onWorkflow={() => setEditorOpen(true)}
       />
       <main>
         <div className="page-heading">
@@ -83,9 +94,13 @@ export function App() {
             onAssign={(id) =>
               setState((s) => assignStand(s, s.selectedFlightId, id))
             }
-            onDispatch={(kind, id) =>
-              setState((s) => dispatchService(s, s.selectedFlightId, kind, id))
+            onDispatch={(taskId, vehicleId) =>
+              setState((s) =>
+                dispatchService(s, s.selectedFlightId, taskId, vehicleId),
+              )
             }
+            onOpenWorkflow={() => setEditorOpen(true)}
+            onPlanMigration={(plan) => setMigration(plan)}
           />
         </div>
         <footer>
@@ -101,6 +116,28 @@ export function App() {
         <div className="toast" role="status">
           {notice}
         </div>
+      )}
+      {editorOpen && (
+        <WorkflowModal
+          state={state}
+          onClose={() => setEditorOpen(false)}
+          onPublish={(templateId: string, draft: WorkflowDraft) => {
+            setState((s) => publishWorkflow(s, templateId, draft));
+            notify("新版本已发布，未开工航班将默认采用");
+          }}
+        />
+      )}
+      {migration && (
+        <MigrationDialog
+          plan={migration}
+          onCancel={() => setMigration(null)}
+          onConfirm={() => {
+            const plan = migration;
+            setState((s) => migrateFlight(s, plan.flightId, plan.toVersion));
+            setMigration(null);
+            notify(`已迁移到流程 v${plan.toVersion}`);
+          }}
+        />
       )}
       {resetOpen && (
         <div className="modal-backdrop">

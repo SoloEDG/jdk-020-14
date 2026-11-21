@@ -1,26 +1,27 @@
-import type { Shift, ServiceKind } from "../../../shared/types";
+import type { Shift } from "../../../shared/types";
 import { copyShift, record } from "../../../shared/document";
-import { serviceBlockReason } from "../lib/eligibility";
-import { serviceCatalog } from "./catalog";
+import { jobCatalog } from "../../workflow/model/catalog";
+import { taskBlockReason } from "../lib/eligibility";
+
 export function dispatchService(
   state: Shift,
   flightId: string,
-  kind: ServiceKind,
+  taskId: string,
   vehicleId: string,
 ): Shift {
   const s = copyShift(state),
-    reason = serviceBlockReason(s, flightId, kind),
     v = s.vehicles.find((x) => x.id === vehicleId),
     f = s.flights.find((x) => x.id === flightId),
     stand = s.stands.find((x) => x.id === f?.standId),
-    task = s.services.find((x) => x.flightId === flightId && x.kind === kind);
+    task = s.services.find((x) => x.id === taskId && x.flightId === flightId);
+  const reason = task ? taskBlockReason(s, task) : "任务不存在";
   if (
     reason ||
     !v ||
     v.status !== "idle" ||
-    v.kind !== kind ||
-    !stand ||
-    !task
+    !task ||
+    v.kind !== task.kind ||
+    !stand
   ) {
     s.conflicts++;
     s.score -= 10;
@@ -36,6 +37,10 @@ export function dispatchService(
   v.progress = 0;
   v.tripDuration =
     5 + Math.hypot(v.target.x - v.origin.x, v.target.y - v.origin.y) / 50;
-  record(s, `${v.id} → ${flightId} · ${serviceCatalog[kind].label}`);
+  const info = jobCatalog[task.kind];
+  record(
+    s,
+    `${v.id} → ${flightId} · ${info.label}${task.copyIndex > 0 ? `#${task.copyIndex + 1}` : ""}`,
+  );
   return s;
 }

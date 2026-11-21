@@ -6,6 +6,7 @@ import {
   FolderOpen,
   RotateCcw,
   Plane,
+  Workflow,
 } from "lucide-react";
 import type { Shift } from "../../../shared/types";
 import { clockLabel } from "../../../shared/document";
@@ -16,6 +17,7 @@ export function SessionBar({
   onSave,
   onLoad,
   onReset,
+  onWorkflow,
 }: {
   state: Shift;
   onPause: () => void;
@@ -23,6 +25,7 @@ export function SessionBar({
   onSave: () => void;
   onLoad: () => void;
   onReset: () => void;
+  onWorkflow: () => void;
 }) {
   return (
     <header className="session-bar">
@@ -62,6 +65,14 @@ export function SessionBar({
         </button>
       </div>
       <div className="file-buttons">
+        <button
+          onClick={onWorkflow}
+          title="保障流程编辑器"
+          aria-label="保障流程编辑器"
+          data-testid="open-workflow"
+        >
+          <Workflow size={17} />
+        </button>
         <button onClick={onSave} title="保存班次" aria-label="保存班次">
           <Save size={17} />
         </button>

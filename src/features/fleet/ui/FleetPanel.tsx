@@ -21,8 +21,8 @@ export function FleetPanel({
           <h2>
             地勤车队{" "}
             <small>
-              {state.vehicles.filter((v) => v.status === "idle").length} / 6
-              待命
+              {state.vehicles.filter((v) => v.status === "idle").length} /{" "}
+              {state.vehicles.length} 待命
             </small>
           </h2>
         </div>

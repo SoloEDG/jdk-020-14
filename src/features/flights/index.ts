@@ -5,5 +5,6 @@ export {
   turnaroundProgress,
   delaySeconds,
   statusLabels,
+  pendingItems,
 } from "./lib/readiness";
 export { FlightBoard } from "./ui/FlightBoard";

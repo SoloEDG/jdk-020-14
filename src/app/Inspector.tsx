@@ -1,23 +1,45 @@
-import type { ServiceKind, Shift } from "../shared/types";
+import type { Shift } from "../shared/types";
 import { clockLabel } from "../shared/document";
-import { flightReady, departFlight, statusLabels } from "../features/flights";
+import {
+  flightReady,
+  departFlight,
+  statusLabels,
+  pendingItems,
+} from "../features/flights";
 import { StandPicker } from "../features/apron";
 import { ServicePanel } from "../features/services";
 import { EventLog } from "../features/session";
+import { pinnedVersionOf } from "../features/workflow";
+import type { MigrationPlan } from "../features/workflow";
+
 export function Inspector({
   state,
   onChange,
   onStand,
   onAssign,
   onDispatch,
+  onOpenWorkflow,
+  onPlanMigration,
 }: {
   state: Shift;
   onChange: (s: Shift) => void;
   onStand: (id: string) => void;
   onAssign: (id: string) => void;
-  onDispatch: (k: ServiceKind, v: string) => void;
+  onDispatch: (taskId: string, vehicleId: string) => void;
+  onOpenWorkflow: () => void;
+  onPlanMigration: (plan: MigrationPlan) => void;
 }) {
   const f = state.flights.find((x) => x.id === state.selectedFlightId)!;
+  const pinned = pinnedVersionOf(state, f);
+  const maxSlots = pinned?.maxConcurrent ?? 2;
+  const activeCount = state.services.filter(
+    (t) =>
+      t.flightId === f.id &&
+      !t.legacy &&
+      (t.status === "travel" || t.status === "working"),
+  ).length;
+  const ready = flightReady(state, f.id);
+  const missing = pendingItems(state, f.id);
   return (
     <aside className="inspector">
       <div className="inspector-heading">
@@ -54,22 +76,21 @@ export function Inspector({
         <div className="stand-occupancy">
           <span>机位 {f.standId} · 服务位</span>
           <b>
-            {
-              state.services.filter(
-                (t) =>
-                  t.flightId === f.id &&
-                  (t.status === "travel" || t.status === "working"),
-              ).length
-            }{" "}
-            / 2 占用
+            {activeCount} / {maxSlots} 占用
           </b>
         </div>
       )}
-      <ServicePanel state={state} onDispatch={onDispatch} />
+      <ServicePanel
+        state={state}
+        onDispatch={onDispatch}
+        onOpenWorkflow={onOpenWorkflow}
+        onPlanMigration={onPlanMigration}
+      />
       <button
         className="primary depart-button"
         data-testid="depart"
-        disabled={!flightReady(state, f.id) || f.status !== "parked"}
+        disabled={!ready || f.status !== "parked"}
+        title={!ready && missing.length ? `未完成：${missing.join("、")}` : undefined}
         onClick={() => onChange(departFlight(state, f.id))}
       >
         {f.status === "departed"
